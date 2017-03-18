@@ -53,9 +53,6 @@ var Engine = (function(global) {
             update(dt); /*if game is not paused update the position of all moving items*/
         }
         render();
-        if (common.pause == 1){ /*when game is paused call player function to display win/lose/game pause/lost all lives */
-            common.pauseAction();
-        }
 
         /* Set our lastTime variable which is used to determine the time delta
          * for the next time this function is called.
@@ -161,7 +158,9 @@ var Engine = (function(global) {
         });
         player.render();
         collectibles.render();
-
+        if (common.pause == 1){ /*when game is paused call player function to display win/lose/game pause/lost all lives */
+            common.pauseRender();
+        }
     }
 
     /* This function does nothing but it could have been a good place to
