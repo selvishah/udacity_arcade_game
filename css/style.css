@@ -1,0 +1,32 @@
+
+
+body {
+    font-family: 'Griffy', cursive;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    margin:auto;
+}
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+
+}
+
+li {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+
+img:hover {
+    opacity: 0.5;
+}
+
+#character {
+    padding-top:50px;
+}
+
+
