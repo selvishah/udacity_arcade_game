@@ -134,6 +134,16 @@ Player.prototype.checkCollision = function() {
     }
 
     if (Math.round(collectibles.x/101) == playerCol  && Math.floor(collectibles.y/83) == playerRow){
+        /*reset older timer + speed*/
+        clearTimeout(collectibles.slowDownTimer);
+        clearTimeout(collectibles.speedUpTimer);
+        allEnemies.forEach(function(enemy) {
+            enemy.speed = 100; /*default speed for all bugs*/
+            if (enemy.speedBeforeSlowDown > 0){
+                enemy.increaseSpeed = enemy.speedBeforeSlowDown;//go back to original speed
+            }
+            enemy.speedBeforeSlowDown = 0;
+        });
 
         if (/Blue/.exec(collectibles.sprite)){
             allEnemies.forEach(function(enemy) {
