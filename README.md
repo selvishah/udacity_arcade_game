@@ -54,3 +54,4 @@ Playing the Game:
 5. If player manages to reach the water without colliding with the bugs, player is moved back to start position.
 6. The speed of the bugs will increase every time player manage to reach the water
 7. Once all lifes are lost, game is reset
+8. Clicking on the game causes it to pause. If clicked again, it will resume
