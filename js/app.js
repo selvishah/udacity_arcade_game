@@ -9,8 +9,9 @@ var Enemy = function() {
     this.multiplier = Math.floor(Math.random() * (3) + 1); //generates numbers between 2 and 4 which correspond to row 2,3,4 in the game
     this.x = 0;
     this.y = this.multiplier*83-20;
-    this.speed = 100
+    this.speed = 100;
     this.increaseSpeed = 0;
+    this.speedBeforeSlowDown = 0;
 
 };
 
@@ -62,7 +63,7 @@ Player.prototype.update = function() {
         this.x = this.x-101;
     }
     else if (this.x < 0){
-        this.x = this.x+101
+        this.x = this.x+101;
     }
     if (this.y > 5*83-20){
         this.y =this.y-83;
@@ -70,9 +71,6 @@ Player.prototype.update = function() {
     else if (this.y < 0){
         this.score += 50;
         common.action = "WIN";
-        allEnemies.forEach(function (enemy){
-            enemy.increaseSpeed += 2; // on win increase the speed of the bugs by a factor of 5
-        })
         common.reset();
         return;
     }
@@ -84,7 +82,7 @@ Player.prototype.update = function() {
 //also write the score on top right and lives on the top left
 Player.prototype.render = function() {
 
-    if (this.sprite == ""){
+    if (this.sprite === ""){
         return;
     }
     if (common.pause == 1){
@@ -95,7 +93,7 @@ Player.prototype.render = function() {
     ctx.font = "20px Griffy";
     ctx.fillStyle = "white";
     ctx.fillText("Score:"+this.score, 420,83);
-    ctx.fillText("Lives:"+this.lives,20,83)
+    ctx.fillText("Lives:"+this.lives,20,83);
 };
 
 //update player position based on key input
@@ -117,47 +115,49 @@ Player.prototype.handleInput = function(key){
     else if(key == 'down'){
         this.y=this.y+83;
     }
-}
+};
 
 //check collision of player with bug/collectibles
 Player.prototype.checkCollision = function() {
 
-    playerRow = Math.floor(this.y/83);
-    playerCol = (this.x)/101;
+    var playerRow = Math.floor(this.y/83);
+    var playerCol = (this.x)/101;
 
 
     for (var index=0;index<allEnemies.length;index++){
         var enemy = allEnemies[index];
         if (Math.round(enemy.x/101) == playerCol  && Math.floor(enemy.y/83) == playerRow){
-            player.score -= 50;
             common.action = "LOSE";
-            player.lives -= 1;
             common.reset();
             break;
         }
-    };
+    }
 
     if (Math.round(collectibles.x/101) == playerCol  && Math.floor(collectibles.y/83) == playerRow){
 
         if (/Blue/.exec(collectibles.sprite)){
-            var increaseSpeed = 0
             allEnemies.forEach(function(enemy) {
-                enemy.speed = 10 /*slow down all bugs*/
-                increaseSpeed = enemy.increaseSpeed;
+                enemy.speed = 10; /*slow down all bugs*/
+                if (enemy.speedBeforeSlowDown === 0){/*this is for case where player gets two back to back blue gems*/
+                    enemy.speedBeforeSlowDown = enemy.increaseSpeed;
+                }
                 enemy.increaseSpeed=0;
-            })
-            setTimeout(function(){allEnemies.forEach(function(enemy) {
-                                    enemy.speed = 100 /*default speed for all bugs*/
-                                    enemy.increaseSpeed = increaseSpeed;
-            })},10000)
+            });
+            collectibles.slowDownTimer = setTimeout(function(){allEnemies.forEach(function(enemy) {
+                                    enemy.speed = 100; /*default speed for all bugs*/
+                                    if (enemy.speedBeforeSlowDown > 0){
+                                        enemy.increaseSpeed = enemy.speedBeforeSlowDown;//go back to original speed after 10 sec
+                                    }
+                                    enemy.speedBeforeSlowDown = 0;
+            });},10000);
         }
         else if (/Green/.exec(collectibles.sprite)){
             allEnemies.forEach(function(enemy) {
-                enemy.speed = 500 /*speed up all bugs*/
-            })
-            setTimeout(function(){allEnemies.forEach(function(enemy) {
-                                    enemy.speed = 100 /*default speed for all bugs*/
-            })},10000)
+                enemy.speed = 500; /*speed up all bugs*/
+            });
+            collectibles.speedUpTimer = setTimeout(function(){allEnemies.forEach(function(enemy) {
+                                    enemy.speed = 100; /*default speed for all bugs. Go back to original speed after 10 sec*/
+            });},10000);
         }
         else if (/Heart/.exec(collectibles.sprite)){
             player.lives += 1;
@@ -169,7 +169,7 @@ Player.prototype.checkCollision = function() {
         collectibles.update();
     }
 
-}
+};
 
 // collectibles class
 
@@ -190,7 +190,7 @@ var Collectibles = function() {
 
 Collectibles.prototype.update = function() {
 
-    gemsList = ["images/Gem Blue.png","images/Gem Green.png","images/Gem Orange.png","images/Heart.png"];
+    var gemsList = ["images/Gem Blue.png","images/Gem Green.png","images/Gem Orange.png","images/Heart.png"];
 
     var random = Math.floor(Math.random() * (4));
 
@@ -203,7 +203,7 @@ Collectibles.prototype.update = function() {
     this.x = randomColumn*101;
     this.y = randomRow*83-20;
 
-}
+};
 
 // Draw the collectible on the screen, required method for game
 Collectibles.prototype.render = function() {
@@ -217,13 +217,13 @@ var Common = function(){
     this.pause = 0; //set to 1 when game is paused
     this.action = "";
     this.opacity = 1;
-}
+};
 
 //pauses game
 Common.prototype.pauseGame = function() {
     this.pause = 1;
     clearInterval(collectibles.interval);
-}
+};
 
 //resumes game or asks users if they want to resume game
 Common.prototype.unpauseGame =function(){
@@ -232,18 +232,20 @@ Common.prototype.unpauseGame =function(){
         this.action = "RESTART"; //once lives are negative or 0 reset the score and lives and ask user if they want to play again
         allEnemies.forEach(function (enemy){
             enemy.increaseSpeed = 0;
-        })
+            enemy.speedBeforeSlowDown = 0;
+        });
     }
     else {
         this.pause = 0;
-        collectibles.interval = setInterval(function(){collectibles.update()},5000);
+        collectibles.interval = setInterval(function(){collectibles.update();},5000);
         this.action = "";
     }
-}
+};
 
 /*reset player/enemy/collectible variables*/
 
 Common.prototype.reset = function(){
+    this.actionSpecificUpdates();
     player.x = 2*101;
     player.y = 5*83-20;
     player.hearty = player.y;
@@ -255,14 +257,46 @@ Common.prototype.reset = function(){
     }
     allEnemies.forEach(function(enemy) {
         enemy.speed = 100;
-    })
+    });
+    clearInterval(collectibles.slowDownTimer);
+    clearInterval(collectibles.speedUpTimer);
     this.pauseGame();
     setTimeout(this.unpauseGame.bind(this),2500); /*resume game after 2.5 sec*/
     this.opacity = 1;
-}
+};
 
-// Draw/write different things on canvas based on whether player won/lost/paused game/lost all lives
-Common.prototype.pauseAction = function() {
+/*function to revert bug speed back to original if players wins or loses immediately after winning blue gem*/
+
+Common.prototype.actionSpecificUpdates = function(){
+
+    if (this.action == "WIN"){
+        allEnemies.forEach(function (enemy){
+            if (enemy.speedBeforeSlowDown > 0){ // this is for cases where we get blue gem and increasespeed is set to 0 and before timer fires to reset the speed
+                                            // user wins. Go back to original speed factor and increment it by 2
+                enemy.increaseSpeed = 2+enemy.speedBeforeSlowDown;
+                enemy.speedBeforeSlowDown = 0;
+            }
+            else {
+                enemy.increaseSpeed += 2; // on win increase the speed of the bugs by a factor of 2
+            }
+        });
+    }
+    else if (this.action == "LOSE"){
+        player.score -= 50;
+        player.lives -= 1;
+        allEnemies.forEach(function (enemy){
+            if (enemy.speedBeforeSlowDown > 0){ // this is for cases where we get blue gem and increasespeed is set to 0 and before timer fires to reset the speed
+                                            // user loses.Go back to original speed factor
+                enemy.increaseSpeed = enemy.speedBeforeSlowDown;
+                enemy.speedBeforeSlowDown = 0;
+            }
+        });
+    }
+
+};
+
+// Draw/write different things on canvas when canvas is paused
+Common.prototype.pauseRender = function() {
 
     if (this.action == "WIN") {
         var x = Math.floor(Math.random() * (405) + 10);
@@ -324,12 +358,12 @@ document.addEventListener('keyup', function(e) {
 
 //this listens to which player has been selected and sets the sprite variable and hides the select player dom
 var charNameList = document.getElementsByClassName("charname");
-for (i=0;i<charNameList.length;i++){
+for (var i=0;i<charNameList.length;i++){
     charNameList[i].addEventListener('click',function(evt){
         var image = this.getElementsByTagName("img")[0];
         player.sprite = image.getAttribute("src");
         document.getElementById("character").style.display = "none";
-        script = document.createElement('script'),
+        var script = document.createElement('script');
         script.setAttribute("src","js/engine.js");
         document.body.appendChild(script);
     });
@@ -340,15 +374,14 @@ for (i=0;i<charNameList.length;i++){
 var canvasClick =function(){
     var canvas = document.getElementsByTagName("canvas")[0];
     canvas.addEventListener('click',function(evt){
-        if (common.pause == 0){
-            common.action = "PAUSE"
+        if (common.pause === 0){
+            common.action = "PAUSE";
             common.pauseGame();
         }
         else {
             common.unpauseGame();
         }
     });
-}
-
+};
 
 
